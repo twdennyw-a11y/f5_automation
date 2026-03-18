@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F5 自動化維運 - 控制中心</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+            width: 95%;
+            max-width: 1400px;
+            margin: 2rem auto;
+            align-items: start;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .sidebar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            height: calc(100vh - 4rem);
+            position: sticky;
+            top: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-profile {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary-color), #58a6ff);
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .user-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .user-role {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-menu {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 0.875rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(46, 160, 67, 0.1);
+            color: var(--primary-color);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--error-color);
+            font-weight: 500;
+            text-align: center;
+            background: rgba(248, 81, 73, 0.05);
+            border: 1px solid rgba(248, 81, 73, 0.2);
+        }
+
+        .logout-btn:hover {
+            background: rgba(248, 81, 73, 0.15);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            display: none; /* hidden by default, toggled via JS */
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .panel-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Form styling */
+        .request-form {
+            max-width: 600px;
+        }
+
+        .request-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .request-form select, .request-form textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .request-form select:focus, .request-form textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        /* Table styling */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .data-table th, .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .data-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .data-table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 0.5rem;
+        }
+
+        .btn-approve {
+            background: rgba(46, 160, 67, 0.2);
+            color: #3fb950;
+            border: 1px solid rgba(46, 160, 67, 0.4);
+        }
+
+        .btn-approve:hover {
+            background: rgba(46, 160, 67, 0.4);
+        }
+
+        .btn-reject {
+            background: rgba(248, 81, 73, 0.2);
+            color: #f85149;
+            border: 1px solid rgba(248, 81, 73, 0.4);
+        }
+
+        .btn-reject:hover {
+            background: rgba(248, 81, 73, 0.4);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .code-block {
+            background: rgba(1, 4, 9, 0.8);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--input-border);
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="user-profile">
+                <div class="avatar" id="userAvatar">U</div>
+                <div class="user-name" id="userNameLabel">Loading...</div>
+                <div class="user-role" id="userRoleLabel">使用者</div>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item active" data-target="myRequestsPanel">我的申請紀錄</li>
+                <li class="nav-item" data-target="newRequestPanel">填寫新申請單</li>
+                <!-- Admin Only -->
+                <li class="nav-item admin-only" data-target="adminPanel" style="display: none;">管理員審核中心</li>
+            </ul>
+
+            <div class="logout-btn" id="logoutBtn">登出</div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- My Requests Panel -->
+            <section class="panel active" id="myRequestsPanel">
+                <div class="panel-header">
+                    <h2 class="panel-title">我的 F5 申請紀錄</h2>
+                    <button class="btn btn-primary" style="width: auto; padding: 0.5rem 1rem;" onclick="loadUserRequests()">重新整理</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="myRequestsTable">
+                        <thead>
+                            <tr>
+                                <th>單號</th>
+                                <th>類型</th>
+                                <th>目標 IP</th>
+                                <th>狀態</th>
+                                <th>申請時間</th>
+                                <th>詳細資訊</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Submit New Request Panel -->
+            <section class="panel" id="newRequestPanel">
+                <div class="panel-header">
+                    <h2 class="panel-title">填寫 F5 需求單</h2>
+                </div>
+                <form id="newRequestForm" class="request-form">
+                    <div class="form-group">
+                        <label for="reqTargetIp">目標 F5 IP</label>
+                        <input type="text" id="reqTargetIp" placeholder="例如: 192.168.1.100 或 mock" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reqType">需求類型</label>
+                        <select id="reqType" required onchange="toggleDetailsTemplate()">
+                            <option value="info_query">設備資訊查詢</option>
+                            <option value="waf_rule">WAF 規則變更 (新增/刪除/更新)</option>
+                            <option value="certificate">憑證更新 (新增/刪除/更新)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reqDetails">詳細參數設定 (JSON 格式)</label>
+                        <textarea id="reqDetails" rows="6" required>{}</textarea>
+                    </div>
+                    <div id="submitMsg" style="margin-bottom: 1rem;"></div>
+                    <button type="submit" class="btn btn-primary">送出申請</button>
+                </form>
+            </section>
+
+            <!-- Admin Approval Center Panel -->
+            <section class="panel" id="adminPanel">
+                <div class="panel-header">
+                    <h2 class="panel-title">待審核清單</h2>
+                    <button class="btn btn-primary" style="width: auto; padding: 0.5rem 1rem;" onclick="loadAllRequests()">重新整理</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="adminRequestsTable">
+                        <thead>
+                            <tr>
+                                <th>單號</th>
+                                <th>申請人 ID</th>
+                                <th>類型</th>
+                                <th>IP</th>
+                                <th>狀態</th>
+                                <th>操作</th>
+                                <th>執行紀錄</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal for viewing details/logs -->
+    <div class="modal-overlay" id="detailsModal">
+        <div class="modal">
+            <h3 style="margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">詳細內容 / 執行紀錄</h3>
+            <div class="code-block" id="modalContent"></div>
+            <button class="btn btn-primary" style="margin-top: 1.5rem;" onclick="closeModal()">關閉</button>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
